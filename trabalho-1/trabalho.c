@@ -10,11 +10,12 @@
 typedef struct timespec crono;
 
 // estado completo de uma partida em andamento
-typedef struct
+typedef struct 
 {
     int pontos;
     int onda;
     int eh_noturno;
+    int terminou;
 
     int n_pos;
     char pos[MAX_POS];
@@ -25,16 +26,16 @@ typedef struct
 
     double intervalo;
     crono cronometro;
-} EstadoJogo;
+} Estado;
 
 // inicializa um cronômetro com a hora atual
-void crono_inicia(crono *c)
+void crono_inicia(crono *c) 
 {
     clock_gettime(CLOCK_MONOTONIC, c);
 }
 
 // retorna o tempo passado desde que o cronômetro *c foi iniciado, em segundos
-double crono_parcial(crono *c)
+double crono_parcial(crono *c) 
 {
     crono agora;
     clock_gettime(CLOCK_MONOTONIC, &agora);
@@ -46,7 +47,7 @@ double crono_parcial(crono *c)
 
 // configura o terminal para o modo "cru", para permitir a leitura
 //   de cada caractere digitado sem esperar pelo "enter".
-void configura_terminal()
+void configura_terminal() 
 {
     if (system("stty raw opost -echo min 0 time 1") != 0)
     {
@@ -62,7 +63,7 @@ void configura_terminal()
 }
 
 // configura o terminal para o modo normal, com bufferização por linha.
-void normaliza_terminal()
+void normaliza_terminal() 
 {
     system("stty sane");
 }
@@ -70,7 +71,7 @@ void normaliza_terminal()
 // lê um caractere do teclado.
 // retorna o código do caractere lido ou 0 casa nada tenha sido digitado.
 // só funciona corretamente se o terminal estiver em modo "cru".
-char lechar()
+char lechar() 
 {
     fflush(stdout);
     char c;
@@ -79,21 +80,42 @@ char lechar()
     return 0;
 }
 
-int main()
+void inicia_onda(Estado *jogo) 
+{ 
+
+}
+int joga_onda(Estado *jogo) { return 0; }
+void mostra_resumo_onda(Estado *jogo) { }
+void espera_confirmacao() { }
+
+void joga_partida(Estado *jogo) 
+{
+    jogo->pontos = 0;
+    jogo->onda = 0;
+
+    int partida_terminou = 0;
+    while (!partida_terminou) {
+        jogo->onda++;
+        inicia_onda(jogo);
+        partida_terminou = joga_onda(jogo);
+        if(!partida_terminou) {
+            mostra_resumo_onda(jogo);
+            espera_confirmacao();
+        }
+    }
+}
+
+int main() 
 {
     configura_terminal();
 
-    EstadoJogo jogo;
-    jogo.pontos = 0;
-    jogo.tiros = 30;
-    jogo.arma = '0';
-
-    char tecla = 0;
-    while (tecla != 27)
-    { // 27 = Esc
-        tecla = lechar();
-        printf(" %d %d %c   \r", jogo.pontos, jogo.tiros, jogo.arma);
+    for (;;) {
+        int c = lechar();
+        printf("%d\n", c);
+        if (c == 'q') break;
     }
+    Estado jogo;
+    joga_partida(&jogo);
 
     normaliza_terminal();
     return 0;
