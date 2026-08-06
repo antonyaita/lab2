@@ -1,7 +1,7 @@
-// estado completo de uma partida em andamento
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #define MAX_POS 13
 #define N_ESCUDOS 3
@@ -9,13 +9,12 @@
 // implementação de um cronômetro
 typedef struct timespec crono;
 
-// estado completo de uma partida em andamento
+// Registro UOU
 typedef struct 
 {
     int pontos;
     int onda;
     int eh_noturno;
-    int terminou;
 
     int n_pos;
     char pos[MAX_POS];
@@ -26,6 +25,8 @@ typedef struct
 
     double intervalo;
     crono cronometro;
+
+    int partida_terminou;
 } Estado;
 
 // inicializa um cronômetro com a hora atual
@@ -80,25 +81,66 @@ char lechar()
     return 0;
 }
 
-void inicia_onda(Estado *jogo) 
-{ 
+void inicializa_estado(Estado *jogo)
+{
+    jogo->arma = '0';
+    jogo->eh_noturno = 0;
+}
+
+void inicia_onda(Estado *jogo) { }
+
+// avança jogo->arma para a próxima arma da sequência válida
+void troca_arma(Estado *jogo)
+{
+    const char *armas = jogo->eh_noturno ? "02468n" : "0123456789n";
+    const char *posicao_atual = strchr(armas, jogo->arma);
+    int indice = posicao_atual - armas;
+    indice = (indice + 1) % strlen(armas);
+    jogo->arma = armas[indice];
+}
+
+void processar_teclado(Estado *jogo) { 
+    char tecla = lechar();
+    
+    switch (tecla)
+    {
+    case 27:
+        jogo->partida_terminou = 1;
+        break;
+    
+    case 9:
+        troca_arma(jogo);
+        break;
+
+    default:
+        break;
+    }
 
 }
-int joga_onda(Estado *jogo) { return 0; }
+void processar_tempo(Estado *jogo) { }
+void apresenta(Estado *jogo) { }
+int onda_terminou(Estado *jogo) { return 1; }
 void mostra_resumo_onda(Estado *jogo) { }
 void espera_confirmacao() { }
 
-void joga_partida(Estado *jogo) 
-{
+void joga_onda(Estado *jogo) {
+    while (!onda_terminou(jogo) && !jogo->partida_terminou) {
+        processar_teclado(jogo);
+        processar_tempo(jogo);
+        apresenta(jogo);
+    }
+}
+
+void joga_partida(Estado *jogo) {
     jogo->pontos = 0;
     jogo->onda = 0;
+    jogo->partida_terminou = 0;
 
-    int partida_terminou = 0;
-    while (!partida_terminou) {
+    while (!jogo->partida_terminou) {
         jogo->onda++;
         inicia_onda(jogo);
-        partida_terminou = joga_onda(jogo);
-        if(!partida_terminou) {
+        joga_onda(jogo);
+        if (!jogo->partida_terminou) {
             mostra_resumo_onda(jogo);
             espera_confirmacao();
         }
@@ -109,12 +151,8 @@ int main()
 {
     configura_terminal();
 
-    for (;;) {
-        int c = lechar();
-        printf("%d\n", c);
-        if (c == 'q') break;
-    }
     Estado jogo;
+    inicializa_estado(&jogo);
     joga_partida(&jogo);
 
     normaliza_terminal();
